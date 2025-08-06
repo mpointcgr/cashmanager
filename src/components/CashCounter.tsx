@@ -111,9 +111,19 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="text-xl font-bold min-w-[3rem] text-center">
-                  {tempCounts[denom.key] || 0}
-                </span>
+                <input
+                  type="number"
+                  value={tempCounts[denom.key] || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseInt(e.target.value) || 0);
+                    setTempCounts(prev => ({
+                      ...prev,
+                      [denom.key]: value
+                    }));
+                  }}
+                  className="text-xl font-bold min-w-[3rem] w-16 text-center border border-gray-300 rounded px-1 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                />
                 <button
                   onClick={() => updateCount(denom.key, 1)}
                   className="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors"
@@ -152,9 +162,19 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="text-xl font-bold min-w-[3rem] text-center">
-                  {tempCounts[denom.key] || 0}
-                </span>
+                <input
+                  type="number"
+                  value={tempCounts[denom.key] || 0}
+                  onChange={(e) => {
+                    const value = Math.max(0, parseInt(e.target.value) || 0);
+                    setTempCounts(prev => ({
+                      ...prev,
+                      [denom.key]: value
+                    }));
+                  }}
+                  className="text-xl font-bold min-w-[3rem] w-16 text-center border border-gray-300 rounded px-1 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                />
                 <button
                   onClick={() => updateCount(denom.key, 1)}
                   className="bg-green-500 hover:bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors"
