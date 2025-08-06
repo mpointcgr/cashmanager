@@ -30,7 +30,6 @@ function App() {
   const [currentCash, setCurrentCash] = useState<{ [key: string]: number }>({});
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dailyStatuses, setDailyStatuses] = useState<DailyStatus[]>([]);
-  const [activeTab, setActiveTab] = useState<'counter' | 'history' | 'reports'>('counter');
   const [activeTab, setActiveTab] = useState<'counter' | 'history' | 'reports' | 'daily-status'>('counter');
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<'add' | 'subtract'>('add');
