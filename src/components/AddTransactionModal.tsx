@@ -4,12 +4,13 @@ import { X, IndianRupee } from 'lucide-react';
 interface AddTransactionModalProps {
   type: 'add' | 'subtract';
   onClose: () => void;
-  onSubmit: (type: 'add' | 'subtract', amount: number, reason: string) => void;
+  onSubmit: (type: 'add' | 'subtract', amount: number, reason: string, source?: string) => void;
 }
 
 const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ type, onClose, onSubmit }) => {
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
+  const [source, setSource] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +26,8 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ type, onClose
       return;
     }
     
-    onSubmit(type, numAmount, reason.trim());
+    const finalReason = source ? `${reason.trim()} (${source})` : reason.trim();
+    onSubmit(type, numAmount, finalReason);
     onClose();
   };
 
@@ -33,6 +35,14 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ type, onClose
     ? ['Daily Sales', 'Cash Deposit', 'Customer Payment', 'Return Money', 'Petty Cash Addition']
     : ['Purchase Payment', 'Expense', 'Cash Withdrawal', 'Staff Payment', 'Utility Bill'];
 
+  const cashSources = [
+    'SBI Bank',
+    'Canara Bank', 
+    'CSC (Common Service Center)',
+    'CSP (Customer Service Point)',
+    'Cash Counter',
+    'Other Source'
+  ];
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
@@ -78,6 +88,26 @@ const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ type, onClose
             </div>
           </div>
 
+          {type === 'add' && (
+            <div className="mb-6">
+              <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-2">
+                Cash Source (Optional)
+              </label>
+              <select
+                id="source"
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select source...</option>
+                {cashSources.map((sourceOption) => (
+                  <option key={sourceOption} value={sourceOption}>
+                    {sourceOption}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="mb-6">
             <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
               Reason
