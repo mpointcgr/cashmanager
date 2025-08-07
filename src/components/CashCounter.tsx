@@ -4,7 +4,14 @@ import { Plus, Minus, RotateCcw } from 'lucide-react';
 interface CashCounterProps {
   currentCash: { [key: string]: number };
   setCurrentCash: (cash: { [key: string]: number }) => void;
-  onTransaction: (type: 'add' | 'subtract', amount: number, reason: string, denominations?: { [key: string]: number }) => void;
+  balances: {
+    csc: number;
+    csp: number;
+    other: number;
+    cash: number;
+  };
+  setBalances: (balances: { csc: number; csp: number; other: number; cash: number }) => void;
+  onTransaction: (type: 'add' | 'subtract', amount: number, reason: string, denominations?: { [key: string]: number }, source?: 'csc' | 'csp' | 'other' | 'cash') => void;
 }
 
 const denominations = [
@@ -21,8 +28,13 @@ const denominations = [
   { key: 'coin1', value: 1, label: '₹1', color: 'bg-gray-100 border-gray-300', type: 'coin' },
 ];
 
-const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, onTransaction }) => {
+const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, balances, setBalances, onTransaction }) => {
   const [tempCounts, setTempCounts] = useState<{ [key: string]: number }>({});
+  const [balanceUpdates, setBalanceUpdates] = useState<{
+    csc: string;
+    csp: string;
+    other: string;
+  }>({ csc: '', csp: '', other: '' });
 
   const updateCount = (denomKey: string, delta: number) => {
     setTempCounts(prev => ({
@@ -45,8 +57,24 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
     }, 0);
 
     const reason = type === 'add' ? 'Manual cash addition' : 'Manual cash removal';
-    onTransaction(type, amount, reason, tempCounts);
+    onTransaction(type, amount, reason, tempCounts, 'cash');
     setTempCounts({});
+  };
+
+  const updateBalance = (source: 'csc' | 'csp' | 'other', type: 'add' | 'subtract') => {
+    const amount = parseFloat(balanceUpdates[source]);
+    if (isNaN(amount) || amount <= 0) return;
+
+    setBalances(prev => ({
+      ...prev,
+      [source]: type === 'add' ? prev[source] + amount : Math.max(0, prev[source] - amount)
+    }));
+
+    const sourceLabel = source === 'csc' ? 'CSC' : source === 'csp' ? 'CSP' : 'Other';
+    const reason = type === 'add' ? `Manual ${sourceLabel} balance addition` : `Manual ${sourceLabel} balance removal`;
+    onTransaction(type, amount, reason, undefined, source);
+
+    setBalanceUpdates(prev => ({ ...prev, [source]: '' }));
   };
 
   const calculateTotal = () => {
@@ -65,6 +93,7 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
 
   const tempTotal = calculateTotal();
   const currentTotal = calculateCurrentTotal();
+  const totalBalance = currentTotal + balances.csc + balances.csp + balances.other;
 
   return (
     <div className="p-6">
@@ -74,11 +103,12 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
       </div>
 
       {/* Current Total */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 mb-6">
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm text-gray-600">Current Total</p>
-            <p className="text-2xl font-bold text-green-600">₹{currentTotal.toLocaleString('en-IN')}</p>
+            <p className="text-sm text-gray-600">Total Balance</p>
+            <p className="text-3xl font-bold text-green-600">₹{totalBalance.toLocaleString('en-IN')}</p>
+            <p className="text-sm text-gray-500">Physical Cash: ₹{currentTotal.toLocaleString('en-IN')}</p>
           </div>
           {tempTotal > 0 && (
             <div>
@@ -86,6 +116,105 @@ const CashCounter: React.FC<CashCounterProps> = ({ currentCash, setCurrentCash, 
               <p className="text-xl font-semibold text-blue-600">₹{tempTotal.toLocaleString('en-IN')}</p>
             </div>
           )}
+        </div>
+        
+        {/* Balance Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-blue-700">CSC Balance</h4>
+              <span className="text-xl font-bold text-blue-600">₹{balances.csc.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={balanceUpdates.csc}
+                onChange={(e) => setBalanceUpdates(prev => ({ ...prev, csc: e.target.value }))}
+                placeholder="Amount"
+                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+                step="0.01"
+              />
+              <button
+                onClick={() => updateBalance('csc', 'add')}
+                className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.csc || parseFloat(balanceUpdates.csc) <= 0}
+              >
+                +
+              </button>
+              <button
+                onClick={() => updateBalance('csc', 'subtract')}
+                className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.csc || parseFloat(balanceUpdates.csc) <= 0}
+              >
+                -
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-purple-200">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-purple-700">CSP Balance</h4>
+              <span className="text-xl font-bold text-purple-600">₹{balances.csp.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={balanceUpdates.csp}
+                onChange={(e) => setBalanceUpdates(prev => ({ ...prev, csp: e.target.value }))}
+                placeholder="Amount"
+                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                min="0"
+                step="0.01"
+              />
+              <button
+                onClick={() => updateBalance('csp', 'add')}
+                className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.csp || parseFloat(balanceUpdates.csp) <= 0}
+              >
+                +
+              </button>
+              <button
+                onClick={() => updateBalance('csp', 'subtract')}
+                className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.csp || parseFloat(balanceUpdates.csp) <= 0}
+              >
+                -
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-indigo-200">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-indigo-700">Other Balance</h4>
+              <span className="text-xl font-bold text-indigo-600">₹{balances.other.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={balanceUpdates.other}
+                onChange={(e) => setBalanceUpdates(prev => ({ ...prev, other: e.target.value }))}
+                placeholder="Amount"
+                className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                min="0"
+                step="0.01"
+              />
+              <button
+                onClick={() => updateBalance('other', 'add')}
+                className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.other || parseFloat(balanceUpdates.other) <= 0}
+              >
+                +
+              </button>
+              <button
+                onClick={() => updateBalance('other', 'subtract')}
+                className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm transition-colors"
+                disabled={!balanceUpdates.other || parseFloat(balanceUpdates.other) <= 0}
+              >
+                -
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

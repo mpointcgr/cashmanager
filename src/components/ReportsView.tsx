@@ -90,6 +90,17 @@ const ReportsView: React.FC<ReportsViewProps> = ({ transactions, currentCash }) 
   const reportData = getReportData();
   const currentTotal = calculateTotal(currentCash);
 
+  // Calculate balance totals from transactions
+  const balanceTotals = transactions.reduce((acc, t) => {
+    if (t.source && t.source !== 'cash') {
+      if (!acc[t.source]) acc[t.source] = 0;
+      acc[t.source] += t.type === 'add' ? t.amount : -t.amount;
+    }
+    return acc;
+  }, {} as { [key: string]: number });
+
+  const totalBalance = currentTotal + (balanceTotals.csc || 0) + (balanceTotals.csp || 0) + (balanceTotals.other || 0);
+
   const totalAdded = transactions
     .filter(t => t.type === 'add')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -127,14 +138,24 @@ const ReportsView: React.FC<ReportsViewProps> = ({ transactions, currentCash }) 
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-600">Current Cash</p>
-              <p className="text-2xl font-bold text-green-700">₹{currentTotal.toLocaleString('en-IN')}</p>
+              <p className="text-sm font-medium text-green-600">Total Balance</p>
+              <p className="text-2xl font-bold text-green-700">₹{totalBalance.toLocaleString('en-IN')}</p>
             </div>
             <IndianRupee className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Physical Cash</p>
+              <p className="text-xl font-bold text-gray-700">₹{currentTotal.toLocaleString('en-IN')}</p>
+            </div>
+            <IndianRupee className="w-6 h-6 text-gray-500" />
           </div>
         </div>
 

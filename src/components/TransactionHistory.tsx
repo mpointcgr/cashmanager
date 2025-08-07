@@ -137,6 +137,15 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
                     <h3 className="font-medium text-gray-800">{transaction.reason}</h3>
                     <p className="text-sm text-gray-500 mt-1">
                       {formatTime(transaction.timestamp)}
+                      {transaction.source && transaction.source !== 'cash' && (
+                        <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          transaction.source === 'csc' ? 'bg-blue-100 text-blue-800' :
+                          transaction.source === 'csp' ? 'bg-purple-100 text-purple-800' :
+                          'bg-indigo-100 text-indigo-800'
+                        }`}>
+                          {transaction.source.toUpperCase()}
+                        </span>
+                      )}
                     </p>
                     {transaction.denominations && (
                       <div className="mt-2">
