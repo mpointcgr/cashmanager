@@ -14,6 +14,7 @@ export interface Transaction {
   reason: string;
   timestamp: Date;
   denominations?: { [key: string]: number };
+  source?: 'csc' | 'csp' | 'other' | 'cash';
 }
 
 export interface DailyStatus {
@@ -28,6 +29,12 @@ export interface DailyStatus {
 
 function App() {
   const [currentCash, setCurrentCash] = useState<{ [key: string]: number }>({});
+  const [balances, setBalances] = useState<{
+    csc: number;
+    csp: number;
+    other: number;
+    cash: number;
+  }>({ csc: 0, csp: 0, other: 0, cash: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dailyStatuses, setDailyStatuses] = useState<DailyStatus[]>([]);
   const [activeTab, setActiveTab] = useState<'counter' | 'history' | 'reports' | 'daily-status'>('counter');
@@ -39,11 +46,16 @@ function App() {
   // Load data from localStorage on mount
   useEffect(() => {
     const savedCash = localStorage.getItem('dailyCashManager_cash');
+    const savedBalances = localStorage.getItem('dailyCashManager_balances');
     const savedTransactions = localStorage.getItem('dailyCashManager_transactions');
     const savedStatuses = localStorage.getItem('dailyCashManager_dailyStatuses');
     
     if (savedCash) {
       setCurrentCash(JSON.parse(savedCash));
+    }
+    
+    if (savedBalances) {
+      setBalances(JSON.parse(savedBalances));
     }
     
     if (savedTransactions) {
@@ -69,6 +81,10 @@ function App() {
   }, [currentCash]);
 
   useEffect(() => {
+    localStorage.setItem('dailyCashManager_balances', JSON.stringify(balances));
+  }, [balances]);
+
+  useEffect(() => {
     localStorage.setItem('dailyCashManager_transactions', JSON.stringify(transactions));
   }, [transactions]);
 
@@ -87,17 +103,26 @@ function App() {
     }, 0);
   };
 
-  const handleTransaction = (type: 'add' | 'subtract', amount: number, reason: string, denominations?: { [key: string]: number }) => {
+  const handleTransaction = (type: 'add' | 'subtract', amount: number, reason: string, denominations?: { [key: string]: number }, source?: 'csc' | 'csp' | 'other' | 'cash') => {
     const transaction: Transaction = {
       id: Date.now().toString(),
       type,
       amount,
       reason,
       timestamp: new Date(),
-      denominations
+      denominations,
+      source: source || 'cash'
     };
 
     setTransactions(prev => [transaction, ...prev]);
+
+    // Update balances based on source
+    if (source && source !== 'cash') {
+      setBalances(prev => ({
+        ...prev,
+        [source]: type === 'add' ? prev[source] + amount : Math.max(0, prev[source] - amount)
+      }));
+    }
 
     if (denominations) {
       setCurrentCash(prev => {
@@ -161,6 +186,7 @@ function App() {
   const exportData = () => {
     const data = {
       cash: currentCash,
+      balances: balances,
       transactions: transactions,
       dailyStatuses: dailyStatuses,
       exportDate: new Date()
@@ -183,6 +209,7 @@ function App() {
       try {
         const data = JSON.parse(e.target?.result as string);
         if (data.cash) setCurrentCash(data.cash);
+       if (data.balances) setBalances(data.balances);
         if (data.transactions) {
           const parsedTransactions = data.transactions.map((t: any) => ({
             ...t,
@@ -205,6 +232,7 @@ function App() {
   };
 
   const totalCash = calculateTotal(currentCash);
+  const totalBalance = totalCash + balances.csc + balances.csp + balances.other;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50">
@@ -222,8 +250,29 @@ function App() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Total Cash</p>
-              <p className="text-3xl font-bold text-green-600">₹{totalCash.toLocaleString('en-IN')}</p>
+              <p className="text-sm text-gray-600">Total Balance</p>
+              <p className="text-3xl font-bold text-green-600">₹{totalBalance.toLocaleString('en-IN')}</p>
+              <p className="text-xs text-gray-500">Cash: ₹{totalCash.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+          
+          {/* Balance Breakdown */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+              <p className="text-xs text-gray-600">Physical Cash</p>
+              <p className="text-lg font-bold text-gray-800">₹{totalCash.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+              <p className="text-xs text-gray-600">CSC Balance</p>
+              <p className="text-lg font-bold text-blue-800">₹{balances.csc.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+              <p className="text-xs text-gray-600">CSP Balance</p>
+              <p className="text-lg font-bold text-purple-800">₹{balances.csp.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+              <p className="text-xs text-gray-600">Other Balance</p>
+              <p className="text-lg font-bold text-indigo-800">₹{balances.other.toLocaleString('en-IN')}</p>
             </div>
           </div>
         </div>
@@ -345,6 +394,8 @@ function App() {
             <CashCounter
               currentCash={currentCash}
               setCurrentCash={setCurrentCash}
+            balances={balances}
+            setBalances={setBalances}
               onTransaction={handleTransaction}
             />
           )}
