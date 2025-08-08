@@ -372,6 +372,7 @@ function App() {
           <button
             onClick={exportData}
             className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+            data-export-button
           >
             <Download className="w-5 h-5" />
             <span>Export Data</span>
