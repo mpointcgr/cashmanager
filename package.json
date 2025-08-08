@@ -7,8 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && NODE_ENV=development electron .\"",
+    "electron:pack": "npm run build && electron-builder --dir",
+    "electron:dist": "npm run build && electron-builder",
+    "electron:dist-win": "npm run build && electron-builder --win",
+    "electron:dist-mac": "npm run build && electron-builder --mac",
+    "electron:dist-linux": "npm run build && electron-builder --linux"
   },
+  "main": "electron/main.js",
+  "homepage": "./",
   "dependencies": {
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
